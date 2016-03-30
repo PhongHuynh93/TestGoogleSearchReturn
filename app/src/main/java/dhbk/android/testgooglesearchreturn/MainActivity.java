@@ -26,26 +26,34 @@ import com.google.android.gms.location.places.Places;
 import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 
+import org.osmdroid.api.IMapController;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
 
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener {
     private static final String TAG = "MainApp";
     private GoogleApiClient mGoogleApiClient;
+    private MapView mMapView;
+    private IMapController mIMapController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
+        // Phong - show the map + add 2 zoom button + zoom at a default view point
+        mMapView = (MapView) findViewById(R.id.map); // map
+        if (mMapView != null) {
+            mMapView.setTileSource(TileSourceFactory.MAPNIK);
+            mMapView.setBuiltInZoomControls(true);
+            mMapView.setMultiTouchControls(true);
+            mIMapController = mMapView.getController(); // map controller
+            mIMapController.setZoom(10);
+            GeoPoint startPoint = new GeoPoint(10.772241, 106.657676);
+            mIMapController.setCenter(startPoint);
+        }
 
         // connect to google api
         mGoogleApiClient = new GoogleApiClient
