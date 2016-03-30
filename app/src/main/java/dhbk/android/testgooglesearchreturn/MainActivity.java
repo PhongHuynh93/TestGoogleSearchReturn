@@ -1,23 +1,38 @@
 package dhbk.android.testgooglesearchreturn;
 
+import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
+import android.text.Spanned;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
+import com.google.android.gms.location.places.ui.PlaceSelectionListener;
+
+
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener {
-    private static final String TAG = "MainAPp";
+    private static final String TAG = "MainApp";
     private GoogleApiClient mGoogleApiClient;
+    private TextView mPlaceDetailsText;
+    private TextView mPlaceAttribution;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +57,37 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 .enableAutoManage(this, this)
                 .build();
 
+        mPlaceDetailsText = (TextView) findViewById(R.id.place_details);
+        mPlaceAttribution = (TextView) findViewById(R.id.place_attribution);
+
+        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
+                getFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                Log.i(TAG, "Place Selected: " + place.getName());
+
+                // Format the returned place's details and display them in the TextView.
+//                mPlaceDetailsText.setText(formatPlaceDetails(getResources(), place.getName(), place.getId(),
+//                        place.getAddress(), place.getPhoneNumber(), place.getWebsiteUri()));
+
+//                CharSequence attributions = place.getAttributions();
+//                if (!TextUtils.isEmpty(attributions)) {
+//                    mPlaceAttribution.setText(Html.fromHtml(attributions.toString()));
+//                } else {
+//                    mPlaceAttribution.setText("");
+//                }
+                mPlaceDetailsText.setText(place.getAddress());
+            }
+
+            @Override
+            public void onError(Status status) {
+                Log.e(TAG, "onError: Status = " + status.toString());
+                Toast.makeText(getApplication(), "Place selection failed: " + status.getStatusMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -81,5 +127,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     protected void onStop() {
         super.onStop();
         Log.d(TAG, "onStop: bat dau");
+    }
+
+    private static Spanned formatPlaceDetails(Resources res, CharSequence name, String id,
+                                              CharSequence address, CharSequence phoneNumber, Uri websiteUri) {
+        Log.e(TAG, res.getString(R.string.place_details, name, id, address, phoneNumber,
+                websiteUri));
+        return Html.fromHtml(res.getString(R.string.place_details, name, id, address, phoneNumber,
+                websiteUri));
+
     }
 }
