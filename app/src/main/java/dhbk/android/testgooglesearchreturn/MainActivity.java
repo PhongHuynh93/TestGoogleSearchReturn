@@ -1,11 +1,16 @@
 package dhbk.android.testgooglesearchreturn;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
@@ -21,12 +26,14 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 
 import org.osmdroid.api.IMapController;
+import org.osmdroid.bonuspack.overlays.Marker;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -43,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // TODO: 3/30/16 Hiếu - khi mở, app sẽ xét xem mình có mở GPS chưa, nếu chưa thì app sẽ hiện 1 hộp thoại "Dialog" yêu cầu người dùng mở GPS, ông sẽ hiện thực hộp thoại này
+
         // Phong - show the map + add 2 zoom button + zoom at a default view point
         mMapView = (MapView) findViewById(R.id.map); // map
         if (mMapView != null) {
@@ -55,11 +64,41 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             mIMapController.setCenter(startPoint);
         }
 
+        FloatingActionButton floatingActionButton = (FloatingActionButton) findViewById(R.id.fab_my_location);
+        floatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mGoogleApiClient.isConnected()) {
+                    if (ActivityCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        return;
+                    }
+                    Location userCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+                    if (userCurrentLocation != null) {
+                        GeoPoint userCurrentPoint = new GeoPoint(userCurrentLocation.getLatitude(), userCurrentLocation.getLongitude());
+                        mIMapController.setCenter(userCurrentPoint);
+                        mIMapController.zoomTo(mMapView.getMaxZoomLevel());
+                        Marker hereMarker = new Marker(mMapView);
+                        hereMarker.setPosition(userCurrentPoint);
+                        hereMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                        hereMarker.setIcon(ContextCompat.getDrawable(getApplication(), R.drawable.ic_face_black_24dp));
+                        hereMarker.setTitle("You here");
+                        mMapView.getOverlays().add(hereMarker);
+                        mMapView.invalidate();
+                    } else {
+                        Log.i(TAG, "onClick: Not determine your current location");
+                    }
+                } else {
+                    Log.i(TAG, "onClick: GoogleApi not connect");
+                }
+            }
+        });
+
         // connect to google api
         mGoogleApiClient = new GoogleApiClient
                 .Builder(this)
                 .addApi(Places.GEO_DATA_API)
                 .addApi(Places.PLACE_DETECTION_API)
+                .addApi(LocationServices.API)
                 .enableAutoManage(this, this)
                 .build();
 
